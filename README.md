@@ -20,9 +20,10 @@ Upgrades compared to upstream:
 
  - Open the "demo" folder in Unity as a new Project
  - Open the "Demo" scene inside Unity (otherwise nothing will happen when you run)
- - Run the project
- - The main camera is blank, but in the Editor view you'll now see a coloured diagram of your data
- - Select the "Extended demo" object, and you have tickboxes to show/hide various features of the output data
+ - Select the "Extended demo" object
+ - Click the "re-generate" button to make a new random Voronoi
+ - in the Editor view you'll now see a coloured diagram of your data
+ - also you now have tickboxes to show/hide various features of the output data
 
 # Unity-Delaunay
 
