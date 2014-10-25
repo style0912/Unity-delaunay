@@ -225,12 +225,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d86f76c45f794c5ea80dcf36b951255, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shouldDrawBounds: 0
-  shouldDrawAllEdges: 0
+  shouldDrawBounds: 1
+  shouldDrawAllEdges: 1
   shouldDrawDelaunayTriangulation: 0
   shouldDrawVoronoiPolygons: 1
-  shouldDrawVoronoiLinesToCenter: 1
+  shouldDrawVoronoiLinesToCenter: 0
   shouldDrawSpanningTree: 0
+  randomizeVoronoiColours: 1
 --- !u!4 &2087895790
 Transform:
   m_ObjectHideFlags: 0
