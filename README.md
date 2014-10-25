@@ -1,5 +1,30 @@
-Unity-Delaunay
-==============
+# Fork of Unity-Delaunay
+
+This fork exists to add:
+
+ - Issue-tracking (missing from master project)
+ - More interactivity in the demo project / add missing docs to source code
+
+I hate forking projects - big waste of time - but with no issue-tracking on upstream, I really had no choice.
+
+## Current features
+
+Upgrades compared to upstream:
+
+ - Demo project lets you enable/disable rendering of individual features
+  - Helps you understand the definitions (undocumented in source)
+  - Helps you experiment with the data structures before embedding in your own projects
+ - Usage instructions!
+
+## Instructions
+
+ - Open the "demo" folder in Unity as a new Project
+ - Open the "Demo" scene inside Unity (otherwise nothing will happen when you run)
+ - Run the project
+ - The main camera is blank, but in the Editor view you'll now see a coloured diagram of your data
+ - Select the "Extended demo" object, and you have tickboxes to show/hide various features of the output data
+
+# Unity-Delaunay
 
 Voronoi diagrams, Delaunay triangulation, minimum spanning graphs, convex hull and more. Ported to C# for use in the Unity game engine from https://github.com/nodename/as3delaunay.
 
