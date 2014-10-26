@@ -13,8 +13,7 @@ interactivity.
 public class VoronoiPolygonator : MonoBehaviour
 {
 	
-		private int
-				m_pointCount = 20;
+		public int numSitesToGenerate = 20;
 		private List<Vector2> m_points;
 		private float m_mapWidth = 20;
 		private float m_mapHeight = 10;
@@ -23,13 +22,18 @@ public class VoronoiPolygonator : MonoBehaviour
 		private List<LineSegment> m_delaunayTriangulation;
 		private Delaunay.Voronoi v;
 
+/** Useful when experimenting and you create too much for Gizmos to render, and CPU goes nuts and dies */
+	public void DeleteAllData()
+	{
+	v = null;
+	}
 		public void Demo () /** Public so that the custom Inspector class can call it */
 		{
 		
 				List<uint> colors = new List<uint> ();
 				m_points = new List<Vector2> ();
 		
-				for (int i = 0; i < m_pointCount; i++) {
+		for (int i = 0; i < numSitesToGenerate; i++) {
 						colors.Add (0);
 						m_points.Add (new Vector2 (
 				UnityEngine.Random.Range (0, m_mapWidth),
@@ -48,15 +52,15 @@ public class VoronoiPolygonator : MonoBehaviour
 				return v == null;
 		}
 	
-		public bool shouldDrawBounds = true;
-		public bool shouldDrawAllEdges = true;
-		public bool shouldDrawDelaunayTriangulation = true;
-		public bool shouldDrawVoronoiPolygons = true;
-		public bool shouldDrawVoronoiLinesToCenter = false;
-		public bool shouldDrawSpanningTree = false;
+		public bool DrawBounds = false;
+		public bool DrawAllEdges = false;
+		public bool DrawDelaunayTriangulation = false;
+		public bool DrawManualVoronoiPolygons = false; // NOTE: this is super-slow, use DrawVoronoiRegions instead
+		public bool DrawManualVoronoiLinesToCenter = false;
+		public bool DrawSpanningTree = false;
 		public bool randomizeVoronoiColours = true;
-		public bool shouldCloseExternalVoronoPolys = true;
-
+		public bool CloseExternalVoronoPolys = true;
+	public bool DrawVoronoiRegions = true;
 		void OnDrawGizmos ()
 		{
 				if (v == null)
@@ -69,7 +73,7 @@ public class VoronoiPolygonator : MonoBehaviour
 						}
 				}
 		
-				if (shouldDrawAllEdges) {
+				if (DrawAllEdges) {
 						if (m_edges != null) {
 								Gizmos.color = Color.gray;
 								for (int i = 0; i< m_edges.Count; i++) {
@@ -80,7 +84,7 @@ public class VoronoiPolygonator : MonoBehaviour
 						}
 				}
 		
-				if (shouldDrawDelaunayTriangulation) {
+				if (DrawDelaunayTriangulation) {
 						Gizmos.color = Color.magenta;
 						if (m_delaunayTriangulation != null) {
 								for (int i = 0; i< m_delaunayTriangulation.Count; i++) {
@@ -91,7 +95,7 @@ public class VoronoiPolygonator : MonoBehaviour
 						}
 				}
 		
-				if (shouldDrawSpanningTree) {
+				if (DrawSpanningTree) {
 						if (m_spanningTree != null) {
 								Gizmos.color = Color.green;
 								for (int i = 0; i< m_spanningTree.Count; i++) {
@@ -103,11 +107,61 @@ public class VoronoiPolygonator : MonoBehaviour
 						}
 				}
 		
-				if (shouldDrawVoronoiPolygons) {
+		/** This is the correct source of Voronoi polygons: the "Regions" data from the Voronoi object.
+		Note that the list is points, not lines, and you usually have to manually CLOSE the final point to the first */
+		if( DrawVoronoiRegions )
+		{
+		Debug.Log("Found "+v.Regions().Count+" regions to draw");
+		foreach( List<Vector2> region in v.Regions() )
+		{
+				if (randomizeVoronoiColours) /** Note: the Edges display above (in Gray) shows unconnected edges,
+		but this section re-uses the actual semi-polygons created automatically by the Voronoi algorithm. To prove
+		this you can optionally turn on colourization of the edges, so that that shared edges will show with same colours
+		*/
+				Gizmos.color = new Color (Random.Range (0.0f, 1.0f), Random.Range (0.0f, 1.0f), Random.Range (0.0f, 1.0f));
+				else
+					Gizmos.color = Color.white;
+				
+				for( int i = 0; i+1<region.Count; i++ )
+				{
+					Vector2 s = (Vector2) region[i];
+					Vector2 e = (Vector2) region[i+1];
+					
+					if (randomizeVoronoiColours) {
+						/** To make them easier to see, shift the vectors SLIGHTLY towards the center point.
+		
+		REMoVED: WE CANT DO THAT WHEN USING THE REGIONS SHORTCUT, REGIONS DELETE THEIR POINTS, sadly :(
+		
+		 This lets you see EXACTLY what poly / partial poly the algorithm is giving us "for free",
+		 so that triangulating it will be easy in your own projects */
+					//	s += (siteCoord - s) * 0.05f;
+				//		e += (siteCoord - e) * 0.05f;
+					}
+					Gizmos.DrawLine (s, e);
+					
+				}
+				
+				if( CloseExternalVoronoPolys )
+				{
+					Gizmos.DrawLine( (Vector2) region[region.Count-1], (Vector2) region[0]);
+				}
+		}
+		}
+		
+		/** This is the INcorrect way of getting polygons out; but it has an advantage: the Voronoi class deletes
+		the Site at center of a Region when giving us Regions (bug: I'd like to fix that and have it return a data
+		structure that includes the Site!).
+		
+		In the meantime, here's how to manually generate the polys by re-using the Boundaries code from Voronoi,
+		much easier than trying to manually generate from raw edges.
+		
+		But ideally: use DrawVoronoiRegions instead
+		*/
+				if (DrawManualVoronoiPolygons) {
 						/** Note, the SiteCoords are identical to the raw Points array you passed-in when creating the Voronoi object,
 		I think. So ... you could safely re-use that here instead of fetching it from the Voronoi object (maybe; could be
 		some filteing happening? Dupes removed, etc?) */
-						List<Vector2> ses = v.SiteCoords ();
+						List<Vector2> ses =m_points;// v.SiteCoords ();
 						foreach (Vector2 siteCoord in ses) {
 								if (randomizeVoronoiColours) /** Note: the Edges display above (in Gray) shows unconnected edges,
 		but this section re-uses the actual semi-polygons created automatically by the Voronoi algorithm. To prove
@@ -118,12 +172,12 @@ public class VoronoiPolygonator : MonoBehaviour
 										Gizmos.color = Color.white;
 			
 								/** NB: this is the reason we had to change VoronoiDemo class and save the Voronoi object: the boundaries
-			are the Voronoi polygons, the most precious thing from the algorithm, but aren't directly saved when you
-			run the algorithm
+			are the Voronoi polygons, the most precious thing from the algorithm. They are saved as Regions data structure
+			when you run the algorithm - but that data structure throws-away the Site/Point that generates each Region.
 			*/
 								List<LineSegment> outlineOfSite = v.VoronoiBoundaryForSite (siteCoord);
 								List<Vector2> pointsOnPolygonOutline = null;
-								if (shouldCloseExternalVoronoPolys)
+								if (CloseExternalVoronoPolys)
 										pointsOnPolygonOutline = new List<Vector2> ();
 								foreach (LineSegment seg in outlineOfSite) {
 										Vector2 s = (Vector2)seg.p0;
@@ -139,26 +193,26 @@ public class VoronoiPolygonator : MonoBehaviour
 										}
 										Gizmos.DrawLine (s, e);
 		
-										if (shouldCloseExternalVoronoPolys) {
+										if (CloseExternalVoronoPolys) {
 												pointsOnPolygonOutline.Add (s);
 												pointsOnPolygonOutline.Add (e);
 										}
 								}
 		
-								if (shouldCloseExternalVoronoPolys) {
+								if (CloseExternalVoronoPolys) {
 										List<Vector2> unduplicatedPoints = new List<Vector2> ();
 				
-					Debug.Log( "Closing outline; "+pointsOnPolygonOutline.Count+" points on outline, with "+outlineOfSite.Count+" lines between them");
+					//Debug.Log( "Closing outline; "+pointsOnPolygonOutline.Count+" points on outline, with "+outlineOfSite.Count+" lines between them");
 										foreach (Vector2 point in pointsOnPolygonOutline) {
 						Vector2 dupe;
 						if ( (dupe = ListContainsVectorCloseToVector(unduplicatedPoints, point)) != Vector2.zero )
 						{
-							Debug.Log( " - point: "+point);
+							//Debug.Log( " - point: "+point);
 														unduplicatedPoints.Remove (dupe);
 														}
 												else
 												{
-							Debug.Log( " + point: "+point);
+							//Debug.Log( " + point: "+point);
 														unduplicatedPoints.Add (point);
 														}
 										}
@@ -170,7 +224,7 @@ public class VoronoiPolygonator : MonoBehaviour
 												Debug.LogError ("Should only have 0 or 2 unconnected points in a single polygon; had: " + unduplicatedPoints.Count);
 								}
 		
-								if (shouldDrawVoronoiLinesToCenter) {
+								if (DrawManualVoronoiLinesToCenter) {
 										foreach (LineSegment seg in outlineOfSite) {
 												Gizmos.color = Color.gray;
 												Gizmos.DrawLine ((Vector2)seg.p0, siteCoord);
@@ -179,7 +233,7 @@ public class VoronoiPolygonator : MonoBehaviour
 						}
 				}
 		
-				if (shouldDrawBounds) {
+				if (DrawBounds) {
 						Gizmos.color = Color.yellow;
 						Gizmos.DrawLine (new Vector2 (0, 0), new Vector2 (0, m_mapHeight));
 						Gizmos.DrawLine (new Vector2 (0, 0), new Vector2 (m_mapWidth, 0));

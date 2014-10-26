@@ -21,6 +21,11 @@ public class InspectorForPolygonator : Editor {
 			vp.Demo ();
 			EditorUtility.SetDirty( target );
 	}
+		if( GUILayout.Button ( "Clear Voronoi") )
+		{
+			vp.DeleteAllData();
+			EditorUtility.SetDirty( target );
+		}
 	DrawDefaultInspector();
 	}
 }
