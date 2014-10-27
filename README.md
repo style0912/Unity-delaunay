@@ -11,6 +11,7 @@ I hate forking projects - big waste of time - but with no issue-tracking on upst
 
 Upgrades compared to upstream:
 
+ - NOW PACKAGED AS A SINGLE .DLL FILE YOU CAN DRAG/DROP INTO UNITY
  - Demo project lets you enable/disable rendering of individual features
   - Helps you understand the definitions (undocumented in source)
   - Helps you experiment with the data structures before embedding in your own projects
@@ -18,12 +19,23 @@ Upgrades compared to upstream:
 
 ## Instructions
 
+### Running the Demo
  - Open the "demo" folder in Unity as a new Project
  - Open the "Demo" scene inside Unity (otherwise nothing will happen when you run)
  - Select the "Extended demo" object
  - Click the "re-generate" button to make a new random Voronoi
  - in the Editor view you'll now see a coloured diagram of your data
  - also you now have tickboxes to show/hide various features of the output data
+
+### Including in your own game/app
+
+ 1. In the CSharpLibrary folder, there should be a subfolder: AS3DelaunayExtended/AS3DelaunayExtended/bin/Debug
+ 1. ...which contains the DLL: AS3DelaunayExtended.dll
+ 1. Drag/drop that DLL into your Unity3D project, and Unity will automatically load + add it
+ 1. You can now use all the classes and features in your project
+   1. NB: this DLL does NOT include the Custom Editor classes (Unity requires two DLLs if you want that)
+   1. NB: this means you lose the custom buttons for "Re-generate Voronoi"; you can use the function via script/code only!
+
 
 # Unity-Delaunay
 
