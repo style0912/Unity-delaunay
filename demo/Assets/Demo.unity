@@ -232,8 +232,8 @@ MonoBehaviour:
   DrawManualVoronoiPolygons: 0
   DrawManualVoronoiLinesToCenter: 0
   DrawSpanningTree: 0
-  randomizeVoronoiColours: 1
-  CloseExternalVoronoPolys: 1
+  randomizeVoronoiColours: 0
+  CloseExternalVoronoPolys: 0
   DrawVoronoiRegions: 1
 --- !u!4 &2087895790
 Transform:
