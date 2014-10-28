@@ -2,6 +2,23 @@ using Delaunay.LR;
 using Delaunay.Utils;
 using System.Collections.Generic;
 
+/** This class is horrible, and ought to be nuked from orbit. But the library is
+heavily dependent upon it in undocumented ways.
+
+It's viciously complicated, and is used all over the library in odd places where it
+shouldn't be used, with no explanation - but with a hard dependency in that it
+doesn't merely "re-order" edges (as the name suggests!) but often "generates" them
+too.
+
+It feels like it was intended to be semi-optimized (in the original AS3? probably),
+but in a modern language like C#, there are far far better ways of doing this.
+
+Currently: in my own projects, I am DELETING the output of this class, it's far
+too dangerous to use in production. I recommend you do the same: write an
+equivalent class (or better: set of classes) that are C#-friendly and do what they
+say, and no more and no less. Hopefully one day someone will re-write this thing
+and REMOVE IT from the rest of the library (all the places where it shouldn't be used)
+*/
 namespace Delaunay
 {
 	public enum VertexOrSite

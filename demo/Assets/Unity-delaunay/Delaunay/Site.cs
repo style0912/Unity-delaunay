@@ -61,7 +61,13 @@ namespace Delaunay
 
 
 		private static readonly float EPSILON = .005f;
-		private static bool CloseEnough (Vector2 p0, Vector2 p1)
+		/**
+		This ABSOLUTELY has to be public! Otherwise you CANNOT workaround
+		the major accuracy-bugs in the AS3Delaunay library (because it does NOT
+		use stable, consistent data, sadly: you cannot compare two Vector2 objects
+		and get a correct answer to "isEqual", it corrupts them at a micro level :( )
+		*/
+		public static bool CloseEnough (Vector2 p0, Vector2 p1)
 		{
 			return Vector2.Distance (p0, p1) < EPSILON;
 		}
@@ -81,8 +87,17 @@ namespace Delaunay
 		internal List<Edge> edges {
 			get { return _edges;}
 		}
-		// which end of each edge hooks up with the previous edge in _edges:
+		/**
+		 which end of each edge hooks up with the previous edge in _edges:
+		 
+		 This MUST BE exposed - it is absurd to hide this, without it the Site
+		 is generating corrupt data (the .edges property is meaningless without
+		 access to this list)
+		 */
 		private List<Side> _edgeOrientations;
+		public List<Side> edgeOrientations {
+		get { return _edgeOrientations; }
+		}
 		// ordered list of points that define the region clipped to bounds:
 		private List<Vector2> _region;
 

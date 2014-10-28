@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using Delaunay;
 using Delaunay.Geo;
 
+using VoronoiNS;
+
 /**
 Upgrade of VoronoiDemo class, with a clearer name, and some better
 interactivity.
@@ -48,7 +50,8 @@ public class VoronoiPolygonator : MonoBehaviour
 				m_delaunayTriangulation = v.DelaunayTriangulation ();
 				
 				Debug.Log ("Created a Voronoi object. But for Unity, it's recommend you convert it to a VoronoiMap (data structure using Unity GameObjects and MonoBehaviours)");
-				//Example: VoronoiMap map = VoronoiMap.CreateMapFromVoronoiOutput( v );
+				//Example:
+                VoronoiDiagram map = VoronoiDiagram.CreateDiagramFromVoronoiOutput( v, true );
 		}
 	
 		public bool NeedsRegeneration ()
