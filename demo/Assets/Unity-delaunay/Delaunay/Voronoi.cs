@@ -1,4 +1,4 @@
-/*
+﻿/*
  * The author of this software is Steven Fortune.  Copyright (c) 1994 by AT&T
  * Bell Laboratories.
  * Permission to use, copy, modify, and distribute this software for any
@@ -192,7 +192,32 @@ namespace Delaunay
 			return DelaunayHelpers.Kruskal (segments, type);
 		}
 
-		public List<List<Vector2>> Regions ()
+        public List<LineSegment> SpanningTree(List<style0912.Edge> riverEdges, KruskalType type/*, BitmapData keepOutMask = null*/) {
+            //List<LineSegment> segments = VoronoiDiagram();
+            //Debug.Log(segments.Count);
+            //foreach (var element in edges) {
+            //    //segments.RemoveAll(x => element.d0.PointInside(x.p0.Value.x, x.p0.Value.y) || element.d0.PointInside(x.p1.Value.x, x.p1.Value.y) || element.d1.PointInside(x.p0.Value.x, x.p0.Value.y) || element.d1.PointInside(x.p1.Value.x, x.p1.Value.y));
+            //}
+            //Debug.Log(segments.Count);
+
+            List<Edge> edges = DelaunayHelpers.SelectNonIntersectingEdges(/*keepOutMask,*/_edges);
+            List<LineSegment> segments = DelaunayHelpers.DelaunayLinesForEdges(edges);
+            //Debug.Log(segments.Count);
+            segments.RemoveAll(x => {
+                //return riverEdges.FindAll(y => (y.v0.point.Equals(x.p0.Value) && y.v1.point.Equals(x.p1.Value)) 
+                //|| (y.v1.point.Equals(x.p0.Value) && y.v0.point.Equals(x.p1.Value))).Count > 0;
+
+                return riverEdges.FindAll(y => y.d0.PointInside(x.p0.Value.x, x.p0.Value.y) || y.d1.PointInside(x.p1.Value.x, x.p1.Value.y)
+                || y.d1.PointInside(x.p1.Value.x, x.p1.Value.y) || y.d1.PointInside(x.p0.Value.x, x.p0.Value.y)
+                ).Count > 0;
+
+                //return true;
+            });
+            //Debug.Log(segments.Count);
+            return DelaunayHelpers.Kruskal(segments, type);
+        }
+
+        public List<List<Vector2>> Regions ()
 		{
 			return _sites.Regions (_plotBounds);
 		}

@@ -12,14 +12,16 @@ namespace style0912 {
         bool _generate;
 
         [SerializeField]
-        int seed;
+        int _seed;
         [SerializeField]
-        bool useRandomSeed;
+        bool _useRandomSeed;
 
         [SerializeField]
-        Delaunay.KruskalType kruskalType;
+        Delaunay.KruskalType _kruskalType;
         [SerializeField]
-        bool regenerateSpanningTree;
+        bool _regenerateSpanningTree;
+        [SerializeField]
+        bool _regenerateTexture;
 
         [SerializeField]
         int _pointCount = 300;
@@ -27,30 +29,41 @@ namespace style0912 {
         float _mapWidth = 100;
         [SerializeField]
         float _mapHeight = 50;
+        [SerializeField]
+        float _lakeThreshold = 0.3f;
 
         [SerializeField]
-        int lloydRelaxations;
+        int _textureScale = 1;
+
+        [SerializeField]
+        Renderer _renderer;
+
+        [SerializeField]
+        int _lloydRelaxations;
 
         [SerializeField]
         List<Vector2> _points;
         [SerializeField]
-        bool drawPoints;
+        bool _drawPoints;
 
         [SerializeField]
-        List<LineSegment> m_edges = null;
+        List<LineSegment> _edges = null;
         [SerializeField]
-        bool drawEdges;
+        bool _drawEdges;
         [SerializeField]
-        List<LineSegment> m_spanningTree;
+        List<LineSegment> _spanningTree;
         [SerializeField]
-        bool drawSpanningTree;
+        bool _drawSpanningTree;
         [SerializeField]
-        List<LineSegment> m_delaunayTriangulation;
+        List<LineSegment> _delaunayTriangulation;
         [SerializeField]
-        bool drawDelaunayTriangulation;
+        bool _drawDelaunayTriangulation;
 
         [SerializeField]
-        Delaunay.Voronoi voronoi;
+        Delaunay.Voronoi _voronoi;
+
+        [SerializeField]
+        Graph _graph;
 
         void Update() {
             if (_generate) {
@@ -58,17 +71,22 @@ namespace style0912 {
                 Generate();
             }
 
-            if (regenerateSpanningTree && null != voronoi) {
-                regenerateSpanningTree = false;
-                m_spanningTree = voronoi.SpanningTree(kruskalType);
+            if (_regenerateSpanningTree && null != _voronoi && null != _graph) {
+                _regenerateSpanningTree = false;
+                GenerateSpanningTree();
+            }
+
+            if(null != _graph && _regenerateTexture) {
+                _regenerateTexture = false;
+                GenerateTexture();
             }
         }
 
         void Generate() {
-            if (useRandomSeed) {
-                seed = System.DateTime.Now.GetHashCode();
+            if (_useRandomSeed) {
+                _seed = System.DateTime.Now.GetHashCode();
             }
-            style0912.Random random = new style0912.Random(seed);
+            style0912.Random random = new style0912.Random(_seed);
 
             List<uint> colors = new List<uint>();
             _points = new List<Vector2>();
@@ -78,15 +96,42 @@ namespace style0912 {
                 _points.Add(new Vector2(random.Next(0, _mapWidth), random.Next(0, _mapHeight)));
             }
 
-            for (int i = 0; i < lloydRelaxations; i++)
+            for (int i = 0; i < _lloydRelaxations; i++)
                 _points = RelaxPoints(random, _points, _mapWidth, _mapHeight).ToList();
 
-            if (null != voronoi)
-                voronoi.Dispose();
-            voronoi = new Delaunay.Voronoi(random, _points, colors, new Rect(0, 0, _mapWidth, _mapHeight));
-            m_edges = voronoi.VoronoiDiagram();
-            m_spanningTree = voronoi.SpanningTree(kruskalType);
-            m_delaunayTriangulation = voronoi.DelaunayTriangulation();
+            if (null != _voronoi)
+                _voronoi.Dispose();
+            _voronoi = new Delaunay.Voronoi(random, _points, colors, new Rect(0, 0, _mapWidth, _mapHeight));
+
+            _graph = new Graph(random, _points, _voronoi, (int)_mapWidth, (int)_mapHeight, _lakeThreshold);
+
+            _edges = _voronoi.VoronoiDiagram();
+            _delaunayTriangulation = _voronoi.DelaunayTriangulation();
+
+            GenerateSpanningTree();
+
+            GenerateTexture();
+        }
+
+        private void GenerateSpanningTree() {
+            //Debug.Log(_graph.edges.Count);
+            List<Center> centers = _graph.centers.FindAll(x => x.ocean || x.water);
+            Debug.Log(centers.Count);
+            List<Edge> edges = new List<Edge>();
+            foreach(var element in centers) {
+                edges.AddRange(element.borders);
+            }
+            //centers.ForEach(x => edges.AddRange(x.borders));
+            edges.AddRange(_graph.edges.FindAll(x => x.river > 0));
+            //List<Edge> edges = _graph.edges.FindAll(x => x.river > 0);
+            //Debug.Log(edges.Count);
+            _spanningTree = _voronoi.SpanningTree(edges, _kruskalType);
+        }
+
+        private void GenerateTexture() {
+            Texture2D texture = _graph.GenerateTexture(_textureScale, _drawEdges);
+            if (null != _renderer)
+                _renderer.sharedMaterial.mainTexture = texture;
         }
 
         public static IEnumerable<Vector2> RelaxPoints(style0912.Random seed, IEnumerable<Vector2> startingPoints, float width, float height) {
@@ -104,34 +149,34 @@ namespace style0912 {
 
         void OnDrawGizmos() {
             Gizmos.color = Color.red;
-            if (_points != null && drawPoints) {
+            if (_points != null && _drawPoints) {
                 for (int i = 0; i < _points.Count; i++) {
                     Gizmos.DrawSphere(_points[i], 0.2f);
                 }
             }
 
-            if (m_edges != null && drawEdges) {
+            if (_edges != null && _drawEdges) {
                 Gizmos.color = Color.white;
-                for (int i = 0; i < m_edges.Count; i++) {
-                    Vector2 left = (Vector2)m_edges[i].p0;
-                    Vector2 right = (Vector2)m_edges[i].p1;
+                for (int i = 0; i < _edges.Count; i++) {
+                    Vector2 left = (Vector2)_edges[i].p0;
+                    Vector2 right = (Vector2)_edges[i].p1;
                     Gizmos.DrawLine((Vector3)left, (Vector3)right);
                 }
             }
 
             Gizmos.color = Color.magenta;
-            if (m_delaunayTriangulation != null && drawDelaunayTriangulation) {
-                for (int i = 0; i < m_delaunayTriangulation.Count; i++) {
-                    Vector2 left = (Vector2)m_delaunayTriangulation[i].p0;
-                    Vector2 right = (Vector2)m_delaunayTriangulation[i].p1;
+            if (_delaunayTriangulation != null && _drawDelaunayTriangulation) {
+                for (int i = 0; i < _delaunayTriangulation.Count; i++) {
+                    Vector2 left = (Vector2)_delaunayTriangulation[i].p0;
+                    Vector2 right = (Vector2)_delaunayTriangulation[i].p1;
                     Gizmos.DrawLine((Vector3)left, (Vector3)right);
                 }
             }
 
-            if (m_spanningTree != null && drawSpanningTree) {
+            if (_spanningTree != null && _drawSpanningTree) {
                 Gizmos.color = Color.green;
-                for (int i = 0; i < m_spanningTree.Count; i++) {
-                    LineSegment seg = m_spanningTree[i];
+                for (int i = 0; i < _spanningTree.Count; i++) {
+                    LineSegment seg = _spanningTree[i];
                     Vector2 left = (Vector2)seg.p0;
                     Vector2 right = (Vector2)seg.p1;
                     Gizmos.DrawLine((Vector3)left, (Vector3)right);
