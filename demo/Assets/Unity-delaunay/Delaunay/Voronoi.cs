@@ -63,30 +63,30 @@ namespace Delaunay
 			_sitesIndexedByLocation = null;
 		}
 		
-		public Voronoi (List<Vector2> points, List<uint> colors, Rect plotBounds)
+		public Voronoi (style0912.Random seed, List<Vector2> points, List<uint> colors, Rect plotBounds)
 		{
 			_sites = new SiteList ();
 			_sitesIndexedByLocation = new Dictionary <Vector2,Site> (); // XXX: Used to be Dictionary(true) -- weak refs. 
-			AddSites (points, colors);
+			AddSites (seed, points, colors);
 			_plotBounds = plotBounds;
 			_triangles = new List<Triangle> ();
 			_edges = new List<Edge> ();
 			FortunesAlgorithm ();
 		}
 		
-		private void AddSites (List<Vector2> points, List<uint> colors)
+		private void AddSites (style0912.Random seed, List<Vector2> points, List<uint> colors)
 		{
 			int length = points.Count;
 			for (int i = 0; i < length; ++i) {
-				AddSite (points [i], (colors != null) ? colors [i] : 0, i);
+				AddSite (seed, points[i], (colors != null) ? colors [i] : 0, i);
 			}
 		}
 		
-		private void AddSite (Vector2 p, uint color, int index)
+		private void AddSite (style0912.Random seed, Vector2 p, uint color, int index)
 		{
 			if (_sitesIndexedByLocation.ContainsKey (p))
 				return; // Prevent duplicate site! (Adapted from https://github.com/nodename/as3delaunay/issues/1)
-			float weight = UnityEngine.Random.value * 100f;
+            float weight = seed.Value() * 100f;
 			Site site = Site.Create (p, (uint)index, weight, color);
 			_sites.Add (site);
 			_sitesIndexedByLocation [p] = site;
@@ -185,7 +185,7 @@ namespace Delaunay
 			return points;
 		}
 		
-		public List<LineSegment> SpanningTree (KruskalType type = KruskalType.MINIMUM/*, BitmapData keepOutMask = null*/)
+		public List<LineSegment> SpanningTree (KruskalType type/*, BitmapData keepOutMask = null*/)
 		{
 			List<Edge> edges = DelaunayHelpers.SelectNonIntersectingEdges (/*keepOutMask,*/_edges);
 			List<LineSegment> segments = DelaunayHelpers.DelaunayLinesForEdges (edges);

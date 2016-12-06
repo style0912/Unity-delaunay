@@ -41,7 +41,7 @@ public class VoronoiDemo : MonoBehaviour
 					UnityEngine.Random.Range (0, m_mapHeight))
 			);
 		}
-		Delaunay.Voronoi v = new Delaunay.Voronoi (m_points, colors, new Rect (0, 0, m_mapWidth, m_mapHeight));
+		Delaunay.Voronoi v = new Delaunay.Voronoi (new style0912.Random(), m_points, colors, new Rect (0, 0, m_mapWidth, m_mapHeight));
 		m_edges = v.VoronoiDiagram ();
 			
 		m_spanningTree = v.SpanningTree (KruskalType.MINIMUM);
