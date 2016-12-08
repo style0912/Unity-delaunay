@@ -21,6 +21,8 @@ namespace style0912 {
         [SerializeField]
         bool _regenerateSpanningTree;
         [SerializeField]
+        bool _spanningTreeTestFlag;
+        [SerializeField]
         bool _regenerateTexture;
 
         [SerializeField]
@@ -73,7 +75,7 @@ namespace style0912 {
 
             if (_regenerateSpanningTree && null != _voronoi && null != _graph) {
                 _regenerateSpanningTree = false;
-                GenerateSpanningTree();
+                GenerateSpanningTree(_spanningTreeTestFlag);
             }
 
             if(null != _graph && _regenerateTexture) {
@@ -108,24 +110,25 @@ namespace style0912 {
             _edges = _voronoi.VoronoiDiagram();
             _delaunayTriangulation = _voronoi.DelaunayTriangulation();
 
-            GenerateSpanningTree();
+            GenerateSpanningTree(_spanningTreeTestFlag);
 
             GenerateTexture();
         }
 
-        private void GenerateSpanningTree() {
-            //Debug.Log(_graph.edges.Count);
-            List<Center> centers = _graph.centers.FindAll(x => x.ocean || x.water);
-            Debug.Log(centers.Count);
-            List<Edge> edges = new List<Edge>();
-            foreach(var element in centers) {
-                edges.AddRange(element.borders);
+        private void GenerateSpanningTree(bool testFlag) {
+            if (testFlag) {
+                //List<Center> centers = _graph.centers.FindAll(x => x.ocean || x.water);
+                //List<Edge> edges = new List<Edge>();
+                //centers.ForEach(x => edges.AddRange(x.borders));
+                //edges.AddRange(_graph.edges.FindAll(x => x.river > 0));
+                //_spanningTree = _voronoi.SpanningTree(edges, _kruskalType);
+                _spanningTree = _voronoi.SpanningTree(_kruskalType);
+                List<Center> centers = _graph.centers.FindAll(x => x.ocean || x.water);
+                
             }
-            //centers.ForEach(x => edges.AddRange(x.borders));
-            edges.AddRange(_graph.edges.FindAll(x => x.river > 0));
-            //List<Edge> edges = _graph.edges.FindAll(x => x.river > 0);
-            //Debug.Log(edges.Count);
-            _spanningTree = _voronoi.SpanningTree(edges, _kruskalType);
+            else {
+                _spanningTree = _voronoi.SpanningTree(_kruskalType);
+            }
         }
 
         private void GenerateTexture() {
