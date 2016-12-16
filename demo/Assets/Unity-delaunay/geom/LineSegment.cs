@@ -5,6 +5,7 @@ namespace Delaunay
 {
 	namespace Geo
 	{
+        [System.Serializable]
 		public sealed class LineSegment
 		{
 			public static int CompareLengths_MAX (LineSegment segment0, LineSegment segment1)

@@ -8,6 +8,7 @@ using Delaunay;
 
 
 namespace style0912 {
+    [System.Serializable]
     public class Graph {
         List<KeyValuePair<int, Corner>> _cornerMap = new List<KeyValuePair<int, Corner>>();
         Func<Vector2, bool> inside;

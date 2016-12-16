@@ -8,24 +8,43 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dffe1da4d5669dc448d1a6a5f4abd4ac, type: 3}
-  m_Name: PartsPresetData
+  m_Script: {fileID: 11500000, guid: 855cbfd366668ba4baf35af8a3927c92, type: 3}
+  m_Name: BiomeTheme.1
   m_EditorClassIdentifier: 
-  presets:
-  - name: SwordShield
-    sockets:
-    - level: 0
-      index: 0
-      category: 12
-    - level: 0
-      index: 1
-      category: 19
-    - level: 1
-      index: 2
-      category: 1
-    - level: 0
-      index: 3
-      category: 20
-    - level: 0
-      index: 4
-      category: 16
+  theme:
+  - biome: 0
+    color: {r: 0.26666668, g: 0.26666668, b: 0.47843137, a: 1}
+  - biome: 3
+    color: {r: 0.2, g: 0.4, b: 0.6, a: 1}
+  - biome: 1
+    color: {r: 0.18431373, g: 0.4, b: 0.4, a: 1}
+  - biome: 2
+    color: {r: 0.6, g: 1, b: 1, a: 1}
+  - biome: 4
+    color: {r: 0.627451, g: 0.5647059, b: 0.46666667, a: 1}
+  - biome: 5
+    color: {r: 1, g: 1, b: 1, a: 1}
+  - biome: 6
+    color: {r: 0.73333335, g: 0.73333335, b: 0.6666667, a: 1}
+  - biome: 7
+    color: {r: 0.53333336, g: 0.53333336, b: 0.53333336, a: 1}
+  - biome: 8
+    color: {r: 0.33333334, g: 0.33333334, b: 0.33333334, a: 1}
+  - biome: 9
+    color: {r: 0.6, g: 0.6666667, b: 0.46666667, a: 1}
+  - biome: 10
+    color: {r: 0.53333336, g: 0.6, b: 0.46666667, a: 1}
+  - biome: 11
+    color: {r: 0.7882353, g: 0.8235294, b: 0.60784316, a: 1}
+  - biome: 12
+    color: {r: 0.26666668, g: 0.53333336, b: 0.33333334, a: 1}
+  - biome: 13
+    color: {r: 0.40392157, g: 0.5803922, b: 0.34901962, a: 1}
+  - biome: 14
+    color: {r: 0.53333336, g: 0.6666667, b: 0.33333334, a: 1}
+  - biome: 17
+    color: {r: 0.8235294, g: 0.7254902, b: 0.54509807, a: 1}
+  - biome: 15
+    color: {r: 0.2, g: 0.46666667, b: 0.33333334, a: 1}
+  - biome: 16
+    color: {r: 0.33333334, g: 0.6, b: 0.26666668, a: 1}

@@ -101,7 +101,7 @@ namespace style0912 {
 
             for (int i = 0; i < _pointCount; i++) {
                 colors.Add(0);
-                _points.Add(new Vector2(random.Next(0, _mapWidth), random.Next(0, _mapHeight)));
+                _points.Add(new Vector2(random.Range(0, _mapWidth), random.Range(0, _mapHeight)));
             }
 
             for (int i = 0; i < _lloydRelaxations; i++)

@@ -1,0 +1,31 @@
+fileFormatVersion: 2
+guid: fe012241186a26e498b7565a6725838b
+labels:
+- mesh
+- collider
+- javascript
+- lowpoly
+- generation
+- island
+- sky
+- mountains
+- vertices
+- terrain
+- triangles
+- random
+- color
+- shape
+- dimension
+- size
+- noise
+- Perlinnoise
+- blending
+- heightmap
+- addobjects
+- js
+- bottom
+- top
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

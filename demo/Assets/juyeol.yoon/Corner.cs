@@ -5,6 +5,7 @@ namespace style0912 {
     /// <summary>
     /// 코너는 노드를 이루는 꼭지점이다.
     /// </summary>
+    [System.Serializable]
     public class Corner {
         public int index;
 

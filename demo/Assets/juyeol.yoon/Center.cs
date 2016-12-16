@@ -7,6 +7,7 @@ namespace style0912 {
     /// <summary>
     /// 노드의 중점. 노드를 나타낸다.
     /// </summary>
+    [System.Serializable]
     public class Center {
         public int index;
         public Vector2 point;   // location
