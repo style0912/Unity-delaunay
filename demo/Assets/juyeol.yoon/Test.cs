@@ -56,6 +56,8 @@ namespace style0912 {
         [SerializeField]
         bool _drawEdges;
         [SerializeField]
+        bool _drawMesh;
+        [SerializeField]
         List<LineSegment> _spanningTree;
         [SerializeField]
         bool _drawSpanningTree;
@@ -160,41 +162,16 @@ namespace style0912 {
         void OnDrawGizmos() {
             Gizmos.color = Color.red;
             if (_points != null && _drawPoints) {
-                for (int i = 0; i < _points.Count; i++) {
-                    Gizmos.DrawSphere(_points[i], 0.2f);
+                for (int i = 0; i < _graph.centers.Count; ++i) {
+                    Gizmos.DrawSphere(_graph.centers[i].point, 0.2f);
                 }
+                    //for (int i = 0; i < _points.Count; i++) {
+                    //    Gizmos.DrawSphere(_points[i], 0.2f);
+                    //}
             }
 
-            if (null != _graph) {
-                for (int i = 0; i < _graph.centers.Count; ++i) {
-                    if (0 < _graph.centers[i].corners.Count) {
-                        Mesh mesh = new Mesh();
-                        List<Vector3> vertices = new List<Vector3>();
-                        List<int> triangles = new List<int>();
-                        //Debug.Log(_graph.centers[i].biome);
-                        //Debug.Log(BiomeProperties.Colors[_graph.centers[i].biome]);
-                        //Gizmos.color = BiomeProperties.Colors[_graph.centers[i].biome];
-                        Gizmos.color = biomeColors.Colors[_graph.centers[i].biome].color;
-                        vertices.Add(_graph.centers[i].corners[0].point);
-                        for (int x = 0; x < _graph.centers[i].corners.Count; ++x) {
-
-                            triangles.Add(0);
-                            triangles.Add(x);
-                            triangles.Add(x+1);
-
-                            vertices.Add(_graph.centers[i].corners[x].point);
-                        }
-
-                        vertices.Add(_graph.centers[i].corners[_graph.centers[i].corners.Count - 1].point);
-
-                        mesh.vertices = vertices.ToArray();
-                        //mesh.col
-                        mesh.triangles = triangles.ToArray();
-                        mesh.RecalculateNormals();
-                        Gizmos.DrawMesh(mesh, Vector3.zero, Quaternion.identity);
-                        //Gizmos.DrawMesh(mesh, Vector3.zero, Quaternion.Euler(0, 180, 0));//.identity);
-                    }
-                }
+            if (null != _graph && null != biomeColors && _drawMesh) {
+                DrawMesh2();
             }
 
             if (_edges != null && _drawEdges) {
@@ -230,6 +207,65 @@ namespace style0912 {
             Gizmos.DrawLine(new Vector2(0, 0), new Vector2(_mapWidth, 0));
             Gizmos.DrawLine(new Vector2(_mapWidth, 0), new Vector2(_mapWidth, _mapHeight));
             Gizmos.DrawLine(new Vector2(0, _mapHeight), new Vector2(_mapWidth, _mapHeight));
+        }
+
+        private void DrawMesh() {
+            for (int i = 0; i < _graph.centers.Count; ++i) {
+                if (0 < _graph.centers[i].corners.Count) {
+                    Mesh mesh = new Mesh();
+                    List<Vector3> vertices = new List<Vector3>();
+                    List<int> triangles = new List<int>();
+                    Gizmos.color = biomeColors.Colors[_graph.centers[i].biome].color;
+                    vertices.Add(_graph.centers[i].corners[0].point);
+                    for (int x = 0; x < _graph.centers[i].corners.Count; ++x) {
+
+                        triangles.Add(0);
+                        triangles.Add(x);
+                        triangles.Add(x + 1);
+
+                        vertices.Add(_graph.centers[i].corners[x].point);
+                    }
+
+                    vertices.Add(_graph.centers[i].corners[_graph.centers[i].corners.Count - 1].point);
+
+                    mesh.vertices = vertices.ToArray();
+                    //mesh.col
+                    mesh.triangles = triangles.ToArray();
+                    mesh.RecalculateNormals();
+                    Gizmos.DrawMesh(mesh, Vector3.zero, Quaternion.identity);
+                }
+            }
+        }
+
+        private void DrawMesh2() {
+            for (int i = 0; i < _graph.centers.Count; ++i) {
+                if (0 < _graph.centers[i].corners.Count) {
+                    Mesh mesh = new Mesh();
+                    List<Vector3> vertices = new List<Vector3>();
+                    List<int> triangles = new List<int>();
+                    Gizmos.color = biomeColors.Colors[_graph.centers[i].biome].color;
+                    vertices.Add(_graph.centers[i].point);
+                    for (int x = 0; x < _graph.centers[i].corners.Count; ++x) {
+                        vertices.Add(_graph.centers[i].corners[x].point);
+                    }
+
+                    for (int x = 1; x < _graph.centers[i].corners.Count; ++x) {
+                        triangles.Add(0);
+                        triangles.Add(x);
+                        triangles.Add(x + 1);
+                    }
+
+                    triangles.Add(0);
+                    triangles.Add(_graph.centers[i].corners.Count);
+                    triangles.Add(1);
+
+                    mesh.vertices = vertices.ToArray();
+                    //mesh.col
+                    mesh.triangles = triangles.ToArray();
+                    mesh.RecalculateNormals();
+                    Gizmos.DrawMesh(mesh, Vector3.zero, Quaternion.identity);
+                }
+            }
         }
     }
 }
