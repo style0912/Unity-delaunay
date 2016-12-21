@@ -5,8 +5,14 @@ using System.Collections;
 [CustomEditor(typeof(SkyIslandGeneratorCS))]
 [System.Serializable]
 public class SkyIslandGeneratorEditorCS : Editor {
+    bool defaultViewInspector;
     public override void OnInspectorGUI() {
-        //base.OnInspectorGUI();
+        defaultViewInspector = GUILayout.Toggle(defaultViewInspector, "defaultViewInspector");
+
+        if (defaultViewInspector) {
+            base.OnInspectorGUI();
+            return;
+        }
 
         SkyIslandGeneratorCS sig = target as SkyIslandGeneratorCS;
         

@@ -1,10 +1,12 @@
 fileFormatVersion: 2
 guid: df28bd1a57673214bbc65a142527e165
-timeCreated: 1480986284
+timeCreated: 1482209820
 licenseType: Pro
 MonoImporter:
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - _renderer: {instanceID: 0}
+  - biomeColors: {fileID: 11400000, guid: e737d05c398618c42939721022807b70, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

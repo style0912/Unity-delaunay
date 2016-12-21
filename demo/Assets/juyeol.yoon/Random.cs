@@ -2,30 +2,15 @@
 
 namespace style0912 {
     public class Random : System.Random {
-        //readonly System.Random _random;
-        public Random() : base() {
-            //_random = new System.Random();
-        }
-        public Random(int seed) : base(seed) {
-            //_random = new System.Random(seed);
-        }
+
+        public Random() : base() { }
+        public Random(int seed) : base(seed) { }
 
         // 0.0 ~ 1.0f
         public float Value() {
             return base.Next(0, 101) * 0.01f;
         }
 
-        override public int Next() {
-            return base.Next();
-        }
-
-        override public int Next(int maxValue) {
-            return base.Next(maxValue);
-        }
-
-        override public int Next(int minValue, int maxValue) {
-            return base.Next(minValue, maxValue);
-        }
         public int Range(int minValue, int maxValue) {
             return Next(minValue, maxValue + 1);
         }

@@ -217,7 +217,151 @@ public class SkyIslandGeneratorCS : MonoBehaviour {
         CreateObject(rand);
     }
 
+    static public void GenerateIsland(MeshFilter filter, MeshRenderer meshRenderer, int seed,
+        float topHeight, float topExponent,
+        List<bool> offsetRandom, ref List<Vector2> offset, List<bool> objectOffsetRandom, ref List<Vector2> objectOffset, float areaSize, float interval,
+        List<float> noiseScale, float[] heights, List<float> alpha, List<int> blendMode, Texture2D shape, List<Color> colors, ref Vector2[] colorsOnUv,
+        Color borderColor, Color bottomColor, ref int borderColorUv, ref int bottomColorUv,
+        Transform transform, Mesh btmMesh, float bottomExponent, float bottomHeight, Material material, Texture2D texture,
+        Mesh mesh, MeshCollider meshCollider, List<float> colorTransValue, List<float> colorMinHeight, List<float> colorMaxHeight) {
+        
+        style0912.Random rand = new style0912.Random(seed.GetHashCode());
+
+        for (var offRnd = 0; offRnd < offsetRandom.Count; offRnd++) {
+            if (offsetRandom[offRnd]) {
+                offset[offRnd] = new Vector2(rand.Range(-1000000.0f, 1000000.0f), rand.Range(-1000000.0f, 1000000.0f));
+            }
+        }
+        //Objects. If offset of Perlin noise is random.
+        for (var objOffRnd = 0; objOffRnd < objectOffsetRandom.Count; objOffRnd++) {
+            if (objectOffsetRandom[objOffRnd]) {
+                objectOffset[objOffRnd] = new Vector2(rand.Range(-1000000.0f, 1000000.0f), rand.Range(-1000000.0f, 1000000.0f));
+            }
+        }
+
+        //fixed size of the island. Calculated from size of the island and interval between vertices.
+        Vector2 size = new Vector2(Mathf.Round(areaSize / interval), Mathf.Round(areaSize / interval));
+
+
+        //ClearIsland();
+        //Generate height maps
+
+        Texture2D noiseTexture = CalcNoiseTexture(size, noiseScale, ref heights, offset, alpha, blendMode, shape, colors, ref colorsOnUv, borderColor, bottomColor, ref borderColorUv, ref bottomColorUv);
+
+        List<int> triangles = new List<int>();
+        List<Vector3> vertices = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>();
+        List<Vector2> uv = new List<Vector2>();
+        List<int> extremeVertices = new List<int>();
+        //Create Top
+        for (var zt = 0; zt < size.y - 1; zt++) {
+            for (var xt = 0; xt < size.x - 1; xt++) {
+                //array of numbers which will take the form "0000"
+                var biQuad = new int[4];
+
+                //taken 4 vertices
+                int vertA = (int)(zt * size.x + xt);
+                int vertB = (int)((zt + 1) * size.x + xt);
+                int vertC = (int)((zt + 1) * size.x + xt + 1);
+                int vertD = (int)(zt * size.x + xt + 1);
+
+                //if height of vertices > 0, then character of "biQuad" equals 1. "1111" or "0101" etc.
+                if (heights[vertA] > 0) biQuad[0] = 1;
+                if (heights[vertB] > 0) biQuad[1] = 1;
+                if (heights[vertC] > 0) biQuad[2] = 1;
+                if (heights[vertD] > 0) biQuad[3] = 1;
+
+                MakeTriangles(vertA, vertB, vertC, vertD, "" + biQuad[0] + biQuad[1] + biQuad[2] + biQuad[3],
+                    ref triangles, size, areaSize, topHeight, interval, heights, topExponent, ref vertices, ref normals, ref uv, ref extremeVertices,
+                    colorsOnUv, borderColorUv, colors, colorTransValue, colorMinHeight, colorMaxHeight);
+            }
+        }
+
+        //bottom part of island is another object
+        CopyToBottom(transform, btmMesh, bottomExponent, bottomHeight, topHeight, interval, vertices, normals, colorsOnUv, bottomColorUv, triangles, extremeVertices, material, texture);
+
+        //assigned to the mesh
+        mesh.vertices = vertices.ToArray();
+        mesh.normals = normals.ToArray();
+        mesh.uv = uv.ToArray();
+        mesh.triangles = triangles.ToArray();
+
+        filter.sharedMesh = mesh;
+        meshRenderer.material = material;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        //create collider
+        //GetComponent<MeshCollider>().sharedMesh = mesh;
+        meshCollider.sharedMesh = mesh;
+        //set texture
+        meshRenderer.sharedMaterial.SetTexture("_MainTex", texture);
+
+        //add objects
+        //CreateObject(rand);
+    }
+
     void CopyToBottom() {
+        //create empty game object
+        var bottom = new GameObject();
+        bottom.transform.position = transform.position;
+        bottom.name = "Bottom";
+
+        //add scripts
+        btmMesh = new Mesh();
+        var btmfilter = bottom.AddComponent<MeshFilter>();
+        var btmMeshRenderer = bottom.AddComponent<MeshRenderer>();
+        var btmMeshCollider = bottom.AddComponent<MeshCollider>();
+
+        List<int> btmExtremeVertices = new List<int>();
+        List<Vector3> btmVertices = new List<Vector3>();
+        List<Vector3> btmNormals = new List<Vector3>();
+        List<Vector2> btmUv = new List<Vector2>();
+        List<int> btmTriangles = new List<int>();
+
+        //copy vertices, normals, UVs from top
+        var vCount = vertices.Count;
+        for (var cpv = 0; cpv < vCount; cpv++) {
+            btmVertices.Add(new Vector3(vertices[cpv].x, Mathf.Pow(vertices[cpv].y, bottomExponent) * -bottomHeight / topHeight, vertices[cpv].z) + new Vector3(0, -interval / 2, 0));
+            btmNormals.Add(normals[cpv]);
+            btmUv.Add(colorsOnUv[bottomColorUv]);
+        }
+
+        //copy triangles from top
+        var tCount = triangles.Count / 3;
+        for (var cpt = 0; cpt < tCount; cpt++) {
+            btmTriangles.Add(triangles[cpt * 3 + 1]);
+            btmTriangles.Add(triangles[cpt * 3]);
+            btmTriangles.Add(triangles[cpt * 3 + 2]);
+        }
+
+        //copy border vertices
+        var evCount = extremeVertices.Count;
+        for (var ev = 0; ev < evCount; ev++) {
+            btmExtremeVertices.Add(extremeVertices[ev] + vCount);
+            btmVertices[extremeVertices[ev]] = vertices[extremeVertices[ev]];
+        }
+
+        //assigned to the mesh
+        btmMesh.vertices = btmVertices.ToArray(); ;
+        btmMesh.normals = btmNormals.ToArray(); ;
+        btmMesh.uv = btmUv.ToArray(); ;
+        btmMesh.triangles = btmTriangles.ToArray(); ;
+
+        btmfilter.sharedMesh = btmMesh;
+        btmMeshRenderer.material = material;
+        btmMesh.RecalculateNormals();
+        btmMesh.RecalculateBounds();
+        //create collider
+        btmMeshCollider.sharedMesh = btmMesh;
+        //set texture
+        btmMeshRenderer.sharedMaterial.SetTexture("_MainTex", texture);
+
+        //make parrent
+        bottom.transform.parent = transform;
+    }
+
+    static void CopyToBottom(Transform transform, Mesh btmMesh, float bottomExponent, float bottomHeight, float topHeight, float interval,
+        List<Vector3> vertices, List<Vector3> normals, Vector2[] colorsOnUv, int bottomColorUv, List<int> triangles, List<int> extremeVertices, Material material, Texture2D texture) {
         //create empty game object
         var bottom = new GameObject();
         bottom.transform.position = transform.position;
@@ -326,7 +470,51 @@ public class SkyIslandGeneratorCS : MonoBehaviour {
         return verticesA;
     }
 
+    static int SetVertices(int a, int vertCol, Vector2 size, float[] heights, float topExponent, float areaSize, float topHeight, float interval,
+        ref List<Vector3> vertices, ref List<Vector3> normals, ref List<Vector2> uv, Vector2[] colorsOnUv) {
+        var x = a % size.x;
+        var y = (int)(((float)a - (x + 1)) / size.y) + 1;
+        var h = Mathf.Pow(heights[a], topExponent);
+
+        vertices.Add(new Vector3(x / size.x * areaSize, h * topHeight, y / size.y * areaSize) - new Vector3((areaSize - interval) / 2, 0, (areaSize - interval) / 2));
+        normals.Add(Vector3.up);
+        uv.Add(colorsOnUv[vertCol]);
+
+        //it's a number of vertices of triangle
+        var verticesA = vertices.Count - 1;
+        return verticesA;
+    }
+
     int SetExtremeVertices(int a, int b) {
+        var ab = 0;
+
+        var x = a % size.x;
+        var y = Mathf.Round(((float)a - (x + 1)) / size.y);
+        var h = Mathf.Pow(heights[(int)(y * size.x + x)], 2);
+        //position of "a" vertices
+        var aVert = new Vector3(x / size.x * areaSize, h * topHeight, y / size.y * areaSize) - new Vector3((areaSize - interval) / 2, interval / 4, (areaSize - interval) / 2);
+
+        x = b % size.x;
+        y = Mathf.Round(((float)b - (x + 1)) / size.y);
+        h = Mathf.Pow(heights[b], 2);
+        //position of "b" vertices
+        var bVert = new Vector3(x / size.x * areaSize, h * topHeight, y / size.y * areaSize) - new Vector3((areaSize - interval) / 2, interval / 4, (areaSize - interval) / 2);
+
+        //position between "a" and "b" vertices
+        var abCenter = (aVert + bVert) / 2;
+
+        vertices.Add(abCenter);
+        normals.Add(Vector3.up);
+        uv.Add(colorsOnUv[borderColorUv]);
+        //number of vertices of triangle
+        ab = vertices.Count - 1;
+        extremeVertices.Add(ab);
+
+        return ab;
+    }
+
+    static int SetExtremeVertices(int a, int b, Vector2 size, float areaSize, float topHeight, float interval, float[] heights,
+        ref List<Vector3> vertices, ref List<Vector3> normals, ref List<Vector2> uv, ref List<int> extremeVertices, Vector2[] colorsOnUv, int borderColorUv) {
         var ab = 0;
 
         var x = a % size.x;
@@ -586,6 +774,240 @@ public class SkyIslandGeneratorCS : MonoBehaviour {
         }
     }
 
+    static void MakeTriangles(int a, int b, int c, int d, string biQuadStr, ref List<int> triangles,
+        Vector2 size, float areaSize, float topHeight, float interval, float[] heights, float topExponent,
+        ref List<Vector3> vertices, ref List<Vector3> normals, ref List<Vector2> uv, ref List<int> extremeVertices, Vector2[] colorsOnUv, int borderColorUv,
+        List<Color> colors, List<float> colorTransValue, List<float> colorMinHeight, List<float> colorMaxHeight) {
+        if (biQuadStr == "0001") {
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+        }
+
+        if (biQuadStr == "0010") {
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+        }
+
+        if (biQuadStr == "0011") {
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+        }
+
+        if (biQuadStr == "0100") {
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+        }
+
+        if (biQuadStr == "0101") {
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+        }
+
+        if (biQuadStr == "0110") {
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+        }
+
+        if (biQuadStr == "0111") {
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+        }
+
+        if (biQuadStr == "1000") {
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+        }
+
+        if (biQuadStr == "1001") {
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+        }
+
+        if (biQuadStr == "1010") {
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+        }
+
+        if (biQuadStr == "1011") {
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(a, b, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+        }
+
+        if (biQuadStr == "1100") {
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+        }
+
+        if (biQuadStr == "1101") {
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(b, c, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(d, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+        }
+
+        if (biQuadStr == "1110") {
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(b, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetExtremeVertices(c, d, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+
+            triangles.Add(SetExtremeVertices(d, a, size, areaSize, topHeight, interval, heights, ref vertices, ref normals, ref uv, ref extremeVertices, colorsOnUv, borderColorUv));
+            triangles.Add(SetVertices(a, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            triangles.Add(SetVertices(c, borderColorUv, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+        }
+
+        if (biQuadStr == "1111") {
+            int newCol = 0;
+            float triH = 0.0f;
+            float transAngle = 0.0f;
+
+            //fixed heights of vertices, with exponent
+            var fHeightA = Mathf.Pow(heights[a], topExponent);
+            var fHeightB = Mathf.Pow(heights[b], topExponent);
+            var fHeightC = Mathf.Pow(heights[c], topExponent);
+            var fHeightD = Mathf.Pow(heights[d], topExponent);
+
+            //int clrs = 0;
+            //int obj = 0;
+
+            //choose diagonal to connect the square
+            if (Mathf.Abs(fHeightA - fHeightC) < Mathf.Abs(fHeightB - fHeightD)) {
+                //tringle ABC and CDA
+                //Color ABC
+                for (int clrs = 0; clrs < colors.Count; clrs++) {
+                    triH = Mathf.Max(fHeightA, fHeightB, fHeightC);
+                    transAngle = colorTransValue[clrs] / topHeight * interval;
+                    if (triH > colorMinHeight[clrs] && triH <= colorMaxHeight[clrs]) {
+                        triH = Mathf.Max(fHeightA, fHeightB, fHeightC) - Mathf.Min(fHeightA, fHeightB, fHeightC);
+                        if (triH > transAngle) newCol = clrs;
+                    }
+                }
+                triangles.Add(SetVertices(a, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+                triangles.Add(SetVertices(b, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+                triangles.Add(SetVertices(c, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+                //Color CDA
+                for (int clrs = 0; clrs < colors.Count; clrs++) {
+                    triH = Mathf.Max(fHeightC, fHeightD, fHeightA);
+                    transAngle = colorTransValue[clrs] / topHeight * interval;
+                    if (triH > colorMinHeight[clrs] && triH <= colorMaxHeight[clrs]) {
+                        triH = Mathf.Max(fHeightC, fHeightD, fHeightA) - Mathf.Min(fHeightC, fHeightD, fHeightA);
+                        if (triH > transAngle) newCol = clrs;
+                    }
+                }
+                triangles.Add(SetVertices(c, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+                triangles.Add(SetVertices(d, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+                triangles.Add(SetVertices(a, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            }
+            else {
+                //tringle ABD and BCD
+                //Color ABD
+                for (int clrs = 0; clrs < colors.Count; clrs++) {
+                    triH = Mathf.Max(fHeightA, fHeightB, fHeightD);
+                    transAngle = colorTransValue[clrs] / topHeight * interval;
+                    if (triH > colorMinHeight[clrs] && triH <= colorMaxHeight[clrs]) {
+                        triH = Mathf.Max(fHeightA, fHeightB, fHeightD) - Mathf.Min(fHeightA, fHeightB, fHeightD);
+                        if (triH > transAngle) newCol = clrs;
+                    }
+                }
+                triangles.Add(SetVertices(a, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+                triangles.Add(SetVertices(b, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+                triangles.Add(SetVertices(d, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+
+                //Color BCD
+                for (int clrs = 0; clrs < colors.Count; clrs++) {
+                    triH = Mathf.Max(fHeightB, fHeightC, fHeightD);
+                    transAngle = colorTransValue[clrs] / topHeight * interval;
+                    if (triH > colorMinHeight[clrs] && triH <= colorMaxHeight[clrs]) {
+                        triH = Mathf.Max(fHeightB, fHeightC, fHeightD) - Mathf.Min(fHeightB, fHeightC, fHeightD);
+                        if (triH > transAngle) newCol = clrs;
+                    }
+                }
+                triangles.Add(SetVertices(b, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+                triangles.Add(SetVertices(c, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+                triangles.Add(SetVertices(d, newCol, size, heights, topExponent, areaSize, topHeight, interval, ref vertices, ref normals, ref uv, colorsOnUv));
+            }
+        }
+    }
+
     void CalcNoise() {
         for (var y = 0; y < size.y; y++) {
             for (var x = 0; x < size.x; x++) {
@@ -644,7 +1066,66 @@ public class SkyIslandGeneratorCS : MonoBehaviour {
         texture.filterMode = FilterMode.Point;
     }
 
-    float BlendHeightMaps(float a, float b , int mode ) {
+    static Texture2D CalcNoiseTexture(Vector2 size, List<float> noiseScale, ref float[] heights, List<Vector2> offset, List<float> alpha, List<int> blendMode, Texture2D shape, List<Color> colors, ref Vector2[] colorsOnUv, Color borderColor, Color bottomColor, ref int borderColorUv, ref int bottomColorUv) {
+        for (var y = 0; y < size.y; y++) {
+            for (var x = 0; x < size.x; x++) {
+                int id = (int)(y * size.x + x);
+                for (var hmC = 0; hmC < noiseScale.Count; hmC++) {
+                    if (x < size.x - 1 && y < size.y - 1) {
+                        var xCoord = (float)x / size.x * noiseScale[hmC];
+                        var yCoord = (float)y / size.y * noiseScale[hmC];
+                        if (hmC == 0) {
+                            heights[id] = Mathf.PerlinNoise(offset[hmC].x + xCoord, offset[hmC].y + yCoord) * alpha[hmC];
+                        }
+                        else {
+                            var a = heights[id];
+                            var b = Mathf.PerlinNoise(offset[hmC].x + xCoord, offset[hmC].y + yCoord) * alpha[hmC];
+                            //blending height maps
+                            heights[id] = BlendHeightMaps(a, b, blendMode[hmC]);
+                        }
+                    }
+                }
+
+                //blend height maps with shape("linear burn" blend mode)
+                heights[id] = BlendHeightMaps(heights[id], shape.GetPixel((int)(x / size.x * shape.width), (int)(y / size.y * shape.height)).grayscale, 4);
+
+                if (x == 0 || y == 0 || x == size.x - 1 || y == size.y - 1) {
+                    heights[id] = 0;
+                }
+            }
+        }
+
+        //create texture
+        Color[] newColors = new Color[16];
+        Texture2D texture = new Texture2D(4, 4);
+        for (var newClrs = 0; newClrs < 16; newClrs++) {
+            if (newClrs < colors.Count) {
+                newColors[newClrs] = colors[newClrs];
+            }
+            else {
+                newColors[newClrs] = new Color(1, 1, 1, 1);
+            }
+
+            var yuv = Mathf.Floor(newClrs / 4f);
+            var xuv = newClrs - yuv * 4;
+
+            //automatically settings "colorsOnUv" 
+            colorsOnUv[newClrs] = new Vector2(0.25f * xuv + 0.125f, 0.25f * yuv + 0.125f);
+        }
+
+        newColors[colors.Count] = borderColor;
+        newColors[colors.Count + 1] = bottomColor;
+        borderColorUv = colors.Count;
+        bottomColorUv = colors.Count + 1;
+
+        //apply texture
+        texture.SetPixels(newColors);
+        texture.Apply();
+        texture.filterMode = FilterMode.Point;
+        return texture;
+    }
+
+    static float BlendHeightMaps(float a, float b , int mode ) {
         float result = 0;
         //multiply
         if (mode == 0) {

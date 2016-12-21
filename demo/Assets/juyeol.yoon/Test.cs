@@ -9,10 +9,16 @@ namespace style0912 {
     public class Test : MonoBehaviour {
 
         [SerializeField]
-        bool _generate;
+        bool _generateGraph;
+
+        [SerializeField]
+        bool _generateMesh;
 
         [SerializeField]
         bool _generateWithTexture;
+
+        [SerializeField]
+        bool _generateWithMesh;
 
         [SerializeField]
         int _seed;
@@ -67,6 +73,9 @@ namespace style0912 {
         bool _drawDelaunayTriangulation;
 
         [SerializeField]
+        bool _drawOutline;
+
+        [SerializeField]
         Delaunay.Voronoi _voronoi;
 
         //[SerializeField]
@@ -75,9 +84,18 @@ namespace style0912 {
         [SerializeField]
         BiomeColors biomeColors;
 
+        [SerializeField]
+        MeshFilter meshfilter;
+
+        [SerializeField]
+        AnimationCurve heightCurve;
+
+        [SerializeField]
+        float heightOffset;
+
         void Update() {
-            if (_generate) {
-                _generate = false;
+            if (_generateGraph) {
+                _generateGraph = false;
                 Generate();
             }
 
@@ -89,6 +107,11 @@ namespace style0912 {
             if(null != _graph && _regenerateTexture) {
                 _regenerateTexture = false;
                 GenerateTexture();
+            }
+
+            if(null != _graph && _generateMesh && null != meshfilter) {
+                _generateMesh = false;
+                GenerateFlatMesh(meshfilter, heightCurve, heightOffset);
             }
         }
 
@@ -122,6 +145,9 @@ namespace style0912 {
 
             if(_generateWithTexture)
                 GenerateTexture();
+
+            if(_generateWithMesh)
+                GenerateFlatMesh(meshfilter, heightCurve, heightOffset);
         }
 
         private void GenerateSpanningTree(bool testFlag) {
@@ -160,15 +186,7 @@ namespace style0912 {
         }
 
         void OnDrawGizmos() {
-            Gizmos.color = Color.red;
-            if (_points != null && _drawPoints) {
-                for (int i = 0; i < _graph.centers.Count; ++i) {
-                    Gizmos.DrawSphere(_graph.centers[i].point, 0.2f);
-                }
-                    //for (int i = 0; i < _points.Count; i++) {
-                    //    Gizmos.DrawSphere(_points[i], 0.2f);
-                    //}
-            }
+            
 
             if (null != _graph && null != biomeColors && _drawMesh) {
                 DrawMesh2();
@@ -202,11 +220,24 @@ namespace style0912 {
                 }
             }
 
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawLine(new Vector2(0, 0), new Vector2(0, _mapHeight));
-            Gizmos.DrawLine(new Vector2(0, 0), new Vector2(_mapWidth, 0));
-            Gizmos.DrawLine(new Vector2(_mapWidth, 0), new Vector2(_mapWidth, _mapHeight));
-            Gizmos.DrawLine(new Vector2(0, _mapHeight), new Vector2(_mapWidth, _mapHeight));
+            
+            if (null != _graph && _points != null && _drawPoints) {
+                Gizmos.color = Color.red;
+                for (int i = 0; i < _graph.centers.Count; ++i) {
+                    Gizmos.DrawSphere(_graph.centers[i].point, 0.2f);
+                }
+                //for (int i = 0; i < _points.Count; i++) {
+                //    Gizmos.DrawSphere(_points[i], 0.2f);
+                //}
+            }
+
+            if (_drawOutline) {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(new Vector2(0, 0), new Vector2(0, _mapHeight));
+                Gizmos.DrawLine(new Vector2(0, 0), new Vector2(_mapWidth, 0));
+                Gizmos.DrawLine(new Vector2(_mapWidth, 0), new Vector2(_mapWidth, _mapHeight));
+                Gizmos.DrawLine(new Vector2(0, _mapHeight), new Vector2(_mapWidth, _mapHeight));
+            }
         }
 
         private void DrawMesh() {
@@ -266,6 +297,124 @@ namespace style0912 {
                     Gizmos.DrawMesh(mesh, Vector3.zero, Quaternion.identity);
                 }
             }
+        }
+
+        private void GenerateMesh(MeshFilter meshfilter, AnimationCurve heightCurve, float heightOffset) {
+            meshfilter.mesh.Clear();
+            List<Vector3> totalVertices = new List<Vector3>();
+            List<int> totalTriangles = new List<int>();
+            List<Vector2> uv = new List<Vector2>();
+            List<Color> colors = new List<Color>();
+            List<Vector3> normals = new List<Vector3>();
+
+            for (int i = 0; i < _graph.centers.Count; ++i) {
+                if (0 < _graph.centers[i].corners.Count) {
+                    List<Vector3> vertices = new List<Vector3>();
+                    List<int> triangles = new List<int>();
+                    //Gizmos.color = biomeColors.Colors[_graph.centers[i].biome].color;
+
+                    float height = GetAverage(_graph.centers[i]);
+                    vertices.Add(new Vector3(_graph.centers[i].point.x, heightCurve.Evaluate(height) * heightOffset, _graph.centers[i].point.y));
+                    colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+
+                    vertices.Add(new Vector3(_graph.centers[i].corners[0].point.x, heightCurve.Evaluate(_graph.centers[i].corners[0].elevation) * heightOffset, _graph.centers[i].corners[0].point.y));
+                    colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+
+                    for (int x = 1; x < _graph.centers[i].corners.Count; ++x) {
+                        vertices.Add(new Vector3(_graph.centers[i].corners[x].point.x, heightCurve.Evaluate(_graph.centers[i].corners[x].elevation) * heightOffset, _graph.centers[i].corners[x].point.y));
+                        colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+                        triangles.Add(0);
+                        triangles.Add(x);
+                        triangles.Add(x + 1);
+
+                        //normals.Add()
+                    }
+
+                    triangles.Add(0);
+                    triangles.Add(_graph.centers[i].corners.Count);
+                    triangles.Add(1);
+
+                    for (int x = 0; x < triangles.Count; ++x) {
+                        triangles[x] += totalVertices.Count;
+                    }
+
+                    totalVertices.AddRange(vertices);
+                    totalTriangles.AddRange(triangles);
+                }
+            }
+            meshfilter.mesh.vertices = totalVertices.ToArray();
+            meshfilter.mesh.colors = colors.ToArray();
+            meshfilter.mesh.normals = normals.ToArray();
+            meshfilter.mesh.triangles = totalTriangles.ToArray();
+            //meshfilter.mesh.RecalculateNormals();
+            meshfilter.mesh.RecalculateBounds();
+        }
+
+        private void GenerateFlatMesh(MeshFilter meshfilter, AnimationCurve heightCurve, float heightOffset) {
+            meshfilter.mesh.Clear();
+            List<Vector3> totalVertices = new List<Vector3>();
+            List<int> totalTriangles = new List<int>();
+            //List<Vector2> uv = new List<Vector2>();
+            List<Color> colors = new List<Color>();
+
+            for (int i = 0; i < _graph.centers.Count; ++i) {
+                if (0 < _graph.centers[i].corners.Count && _graph.centers[i].biome != Biome.Ocean) {
+                    List<Vector3> vertices = new List<Vector3>();
+                    List<int> triangles = new List<int>();
+
+                    float height = _graph.centers[i].elevation;
+
+                    for (int x = 0; x < _graph.centers[i].corners.Count - 1; ++x) {
+                        vertices.Add(new Vector3(_graph.centers[i].point.x, heightCurve.Evaluate(height) * heightOffset, _graph.centers[i].point.y));
+                        colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+                        triangles.Add(vertices.Count-1);
+
+                        vertices.Add(new Vector3(_graph.centers[i].corners[x].point.x, heightCurve.Evaluate(_graph.centers[i].corners[x].elevation) * heightOffset, _graph.centers[i].corners[x].point.y));
+                        colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+                        triangles.Add(vertices.Count - 1);
+
+                        vertices.Add(new Vector3(_graph.centers[i].corners[x + 1].point.x, heightCurve.Evaluate(_graph.centers[i].corners[x + 1].elevation) * heightOffset, _graph.centers[i].corners[x + 1].point.y));
+                        colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+                        triangles.Add(vertices.Count - 1);
+                    }
+
+                    vertices.Add(new Vector3(_graph.centers[i].point.x, heightCurve.Evaluate(height) * heightOffset, _graph.centers[i].point.y));
+                    colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+                    triangles.Add(vertices.Count - 1);
+
+                    vertices.Add(new Vector3(_graph.centers[i].corners[_graph.centers[i].corners.Count - 1].point.x, heightCurve.Evaluate(_graph.centers[i].corners[_graph.centers[i].corners.Count - 1].elevation) * heightOffset, _graph.centers[i].corners[_graph.centers[i].corners.Count - 1].point.y));
+                    colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+                    triangles.Add(vertices.Count - 1);
+
+                    vertices.Add(new Vector3(_graph.centers[i].corners[0].point.x, heightCurve.Evaluate(_graph.centers[i].corners[0].elevation) * heightOffset, _graph.centers[i].corners[0].point.y));
+                    colors.Add(biomeColors.Colors[_graph.centers[i].biome].color);
+                    triangles.Add(vertices.Count - 1);
+
+                    for (int x = 0; x < triangles.Count; ++x) {
+                        triangles[x] += totalVertices.Count;
+                    }
+
+                    totalVertices.AddRange(vertices);
+                    totalTriangles.AddRange(triangles);
+                }
+            }
+            meshfilter.mesh.vertices = totalVertices.ToArray();
+            meshfilter.mesh.colors = colors.ToArray();
+            meshfilter.mesh.triangles = totalTriangles.ToArray();
+            meshfilter.mesh.RecalculateNormals();
+            meshfilter.mesh.RecalculateBounds();
+        }
+
+        float GetAverage(Center center) {
+            //return center.elevation;
+            float sum = 0;
+            for(int i = 0; i < center.corners.Count; ++i) {
+                sum += center.corners[i].elevation;
+            }
+
+            return Mathf.Lerp(center.elevation, sum / center.neighbors.Count, 0.5f);
+
+            //return sum / center.neighbors.Count;
         }
     }
 }
