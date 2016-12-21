@@ -21,12 +21,12 @@ GameObject:
   - 4: {fileID: 4000012795320368}
   - 108: {fileID: 108000010799643848}
   m_Layer: 0
-  m_Name: Directional light (4)
+  m_Name: Directional light - Down
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!1 &1000011681390548
 GameObject:
   m_ObjectHideFlags: 0
@@ -37,12 +37,12 @@ GameObject:
   - 4: {fileID: 4000010683722978}
   - 108: {fileID: 108000012683433692}
   m_Layer: 0
-  m_Name: Directional light (2)
+  m_Name: Directional light - Back
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!1 &1000012103075192
 GameObject:
   m_ObjectHideFlags: 0
@@ -53,12 +53,12 @@ GameObject:
   - 4: {fileID: 4000012860009652}
   - 108: {fileID: 108000013537462872}
   m_Layer: 0
-  m_Name: Directional light (1)
+  m_Name: Directional light - Right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!1 &1000012590468542
 GameObject:
   m_ObjectHideFlags: 0
@@ -84,23 +84,23 @@ GameObject:
   - 4: {fileID: 4000014135950646}
   - 108: {fileID: 108000012152712332}
   m_Layer: 0
-  m_Name: Directional light (5)
+  m_Name: Directional light - Up
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!1 &1000013694406926
+  m_IsActive: 1
+--- !u!1 &1000013539549514
 GameObject:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   serializedVersion: 4
   m_Component:
-  - 4: {fileID: 4000012910704630}
-  - 108: {fileID: 108000011966171646}
+  - 4: {fileID: 4000012587485500}
+  - 108: {fileID: 108000010692287650}
   m_Layer: 0
-  m_Name: Directional light
+  m_Name: Directional Light - Foward
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -116,12 +116,12 @@ GameObject:
   - 4: {fileID: 4000011044675218}
   - 108: {fileID: 108000012973032020}
   m_Layer: 0
-  m_Name: Directional light (3)
+  m_Name: Directional light - Left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &4000010683722978
 Transform:
   m_ObjectHideFlags: 1
@@ -154,18 +154,31 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1000012590468542}
-  m_LocalRotation: {x: -0.6306758, y: 0, z: 0, w: -0.7760464}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_LocalEulerAnglesHint: {x: -1001.8, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_Children:
-  - {fileID: 4000012910704630}
+  - {fileID: 4000012587485500}
   - {fileID: 4000012860009652}
   - {fileID: 4000010683722978}
   - {fileID: 4000011044675218}
   - {fileID: 4000012795320368}
   - {fileID: 4000014135950646}
   m_Father: {fileID: 0}
+  m_RootOrder: 0
+--- !u!4 &4000012587485500
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1000013539549514}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Children: []
+  m_Father: {fileID: 4000011343415024}
   m_RootOrder: 0
 --- !u!4 &4000012795320368
 Transform:
@@ -193,19 +206,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4000011343415024}
   m_RootOrder: 1
---- !u!4 &4000012910704630
-Transform:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1000013694406926}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_Children: []
-  m_Father: {fileID: 4000011343415024}
-  m_RootOrder: 0
 --- !u!4 &4000014135950646
 Transform:
   m_ObjectHideFlags: 1
@@ -219,17 +219,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4000011343415024}
   m_RootOrder: 5
---- !u!108 &108000010799643848
+--- !u!108 &108000010692287650
 Light:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1000011637735950}
+  m_GameObject: {fileID: 1000013539549514}
   m_Enabled: 1
   serializedVersion: 7
   m_Type: 1
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.5
+  m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
+  m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
@@ -253,22 +253,22 @@ Light:
   m_BounceIntensity: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
---- !u!108 &108000011966171646
+--- !u!108 &108000010799643848
 Light:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1000013694406926}
+  m_GameObject: {fileID: 1000011637735950}
   m_Enabled: 1
   serializedVersion: 7
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1.8
+  m_Intensity: 0.7
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 0
+    m_Type: 2
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -297,7 +297,7 @@ Light:
   serializedVersion: 7
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.5
+  m_Intensity: 0.7
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
@@ -331,7 +331,7 @@ Light:
   serializedVersion: 7
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.5
+  m_Intensity: 0.7
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
@@ -365,7 +365,7 @@ Light:
   serializedVersion: 7
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.5
+  m_Intensity: 0.7
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
@@ -399,7 +399,7 @@ Light:
   serializedVersion: 7
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.5
+  m_Intensity: 0.7
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
